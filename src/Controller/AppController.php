@@ -43,7 +43,6 @@ class AppController extends Controller
 
         $this->loadComponent('RequestHandler');
         $this->loadComponent('Flash');
-        
         $this->loadComponent('Auth', [
             'loginAction' => [
                 'plugin' => false,
@@ -61,6 +60,7 @@ class AppController extends Controller
                         'username' => 'email',
                         'password' => 'password',
                     ],
+                    'scope' => array('Users.is_verified' => 1),
                 ],
             ],
         ]);
@@ -70,7 +70,30 @@ class AppController extends Controller
          * see https://book.cakephp.org/3.0/en/controllers/components/security.html
          */
         // $this->loadComponent('Security');
-        // $this->loadComponent('Csrf');
+        $this->loadComponent('Csrf');
+        $GLOBALS['roleAccess'] = [];
+        if ($this->Auth->user()) {
+            $this->loadModel('Actions');
+            $this->loadModel('RoleActions');
+            $query = $this->Actions->find('all', [
+                'join' => [
+                    'RoleActions' => [
+                        'table' => 'role_actions',
+                        'type' => 'LEFT',
+                        'conditions' => 'RoleActions.action_id = Actions.id',
+                    ],
+                ],
+                'conditions' => ['Actions.is_active' => 1, 'RoleActions.role_id' => $this->Auth->user('role_id')],
+                'fields' => ['Actions.action', 'RoleActions.role_id', 'RoleActions.action_id', 'RoleActions.is_allowed'],
+            ])->toList();
+            if (isset($query) && !empty($query)) {
+                foreach ($query as $key => $val) {
+                    $roleAccess[$val->action]['isAllowed'] = $val->RoleActions['is_allowed'];
+                }
+                $GLOBALS['roleAccess'] = $roleAccess;
+                $this->set('roleAccess', $roleAccess);
+            }
+        }
     }
     public function beforeRender(Event $event)
     {

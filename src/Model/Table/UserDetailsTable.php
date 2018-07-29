@@ -45,10 +45,10 @@ class UserDetailsTable extends Table
             'foreignKey' => 'user_id',
             'joinType' => 'INNER'
         ]);
-        // $this->belongsTo('Professions', [
-        //     'foreignKey' => 'profession_id',
-        //     'joinType' => 'INNER'
-        // ]);
+        $this->belongsTo('Professions', [
+            'foreignKey' => 'profession_id',
+            'joinType' => 'INNER'
+        ]);
     }
 
     /**
