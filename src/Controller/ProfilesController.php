@@ -33,6 +33,12 @@ class ProfilesController extends AppController
             $request = $this->request->getData();
             $profile = $this->Profiles->newEntity($request);
             $profile = $this->Profiles->patchEntity($profile, $request);
+            if (!trim($profile->pet_name)) {
+                $res['error']['status_code'] = 0;
+                $res['error']['message'] = 'Pet Name is required!';
+                echo json_encode($res);
+                exit;
+            }
             $query = $this->Profiles->find('all')
                 ->where(['Profiles.owner_id' => $this->Auth->user('id')]);
             $existing_profile = $query->count();

@@ -135,6 +135,42 @@ class UsersController extends AppController
         $this->response->type('application/json');
         $request = $this->request->getData();
         $user = $this->Users->newEntity($request);
+        if (!trim($user->first_name)) {
+            $res['error']['status_code'] = 0;
+            $res['error']['message'] = 'First Name is required!';
+            echo json_encode($res);
+            exit;
+        }
+        if (!trim($user->last_name)) {
+            $res['error']['status_code'] = 0;
+            $res['error']['message'] = 'Last Name is required!';
+            echo json_encode($res);
+            exit;
+        }
+        if (!trim($user->email)) {
+            $res['error']['status_code'] = 0;
+            $res['error']['message'] = 'Email is required!';
+            echo json_encode($res);
+            exit;
+        }
+        if (!filter_var($user->email, FILTER_VALIDATE_EMAIL)) {
+            $res['error']['status_code'] = 0;
+            $res['error']['message'] = 'Email is not valid!';
+            echo json_encode($res);
+            exit;
+        }
+        if (!trim($user->password)) {
+            $res['error']['status_code'] = 0;
+            $res['error']['message'] = 'Password is required!';
+            echo json_encode($res);
+            exit;
+        }
+        if (!trim($user->role_id)) {
+            $res['error']['status_code'] = 0;
+            $res['error']['message'] = 'User type is required!';
+            echo json_encode($res);
+            exit;
+        }
         $query = $this->Users->find('all')
             ->where(['Users.email' => $user->email]);
         $existing_user = $query->first();

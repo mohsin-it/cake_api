@@ -28,12 +28,16 @@ class MastersController extends AppController
         $res['success'] = [];
         $res['result'] = [];
         $this->loadModel('Pets');
-        $pets = $this->Pets->find('list', [
+        $pets = $this->Pets->find('all', [
             'keyField' => 'id',
             'valueField' => 'name',
         ])->toArray();
         if ($pets && !empty($pets)) {
-            $res['result']['Pets'] = $pets;
+            for($i=0;$i<count($pets);$i++){
+                $data[$i]['id'] = $pets[$i]['id'];
+                $data[$i]['name'] = $pets[$i]['name'];
+            }
+            $res['result'] = $data;
         } else {
             $res['error']['status_code'] = 0;
             $res['error']['message'] = 'No data found';
@@ -50,19 +54,23 @@ class MastersController extends AppController
         $res['result'] = [];
         $this->loadModel('Breeds');
         if (!trim($pet_id)) {
-            $breeds = $this->Breeds->find('list', [
+            $breeds = $this->Breeds->find('all', [
                 'keyField' => 'id',
                 'valueField' => 'name',
             ])->toArray();
         } else {
-            $breeds = $this->Breeds->find('list', [
+            $breeds = $this->Breeds->find('all', [
                 'keyField' => 'id',
                 'valueField' => 'name',
                 'conditions' => ['Breeds.pet_id' => trim($pet_id)],
             ])->toArray();
         }
         if ($breeds && !empty($breeds)) {
-            $res['result']['Breeds'] = $breeds;
+            for($i=0;$i<count($breeds);$i++){
+                $data[$i]['id'] = $breeds[$i]['id'];
+                $data[$i]['name'] = $breeds[$i]['name'];
+            }
+            $res['result'] = $data;
         } else {
             $res['error']['status_code'] = 0;
             $res['error']['message'] = 'No data found';
@@ -79,19 +87,23 @@ class MastersController extends AppController
         $res['result'] = [];
         $this->loadModel('Professions');
         if (!trim($id)) {
-            $professions = $this->Professions->find('list', [
+            $professions = $this->Professions->find('all', [
                 'keyField' => 'id',
                 'valueField' => 'name',
             ])->toArray();
         } else {
-            $professions = $this->Professions->find('list', [
+            $professions = $this->Professions->find('all', [
                 'keyField' => 'id',
                 'valueField' => 'name',
                 'conditions' => ['Professions.id' => trim($id)],
             ])->toArray();
         }
         if ($professions && !empty($professions)) {
-            $res['result']['Breeds'] = $professions;
+            for($i=0;$i<count($professions);$i++){
+                $data[$i]['id'] = $professions[$i]['id'];
+                $data[$i]['name'] = $professions[$i]['name'];
+            }
+            $res['result'] = $data;
         } else {
             $res['error']['status_code'] = 0;
             $res['error']['message'] = 'No data found';
