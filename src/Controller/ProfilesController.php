@@ -74,14 +74,18 @@ class ProfilesController extends AppController
         $res['success'] = [];
         $res['result'] = [];
         if (array_key_exists('View Profile', $GLOBALS['roleAccess']) && $GLOBALS['roleAccess']['View Profile']['isAllowed'] == 1) {
-            $profiles = $this->Profiles->find('list', [
+            $profiles = $this->Profiles->find('all', [
                 'keyField' => 'uniq_id',
                 'valueField' => 'pet_name',
                 'conditions' => ['Profiles.owner_id' => $this->Auth->user('id')],
                 // 'fields' => ['Profiles.pet_name', 'Profiles.id'],
             ])->toArray();
             if (isset($profiles) && !empty($profiles)) {
-                $res['result']['Pets'] = $profiles;
+                for($i=0;$i<count($profiles);$i++){
+                    $data[$i]['id'] = $profiles[$i]['uniq_id'];
+                    $data[$i]['name'] = $profiles[$i]['pet_name'];
+                }
+                $res['result'] = $data;
             } else {
                 $res['error']['status_code'] = 0;
                 $res['error']['message'] = 'NO data found!';

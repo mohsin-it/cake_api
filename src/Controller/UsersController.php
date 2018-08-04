@@ -247,6 +247,8 @@ class UsersController extends AppController
         $res['result'] = [];
         $res['error'] = [];
         $res['success'] = [];
+        $res['error']['status_code'] = 0;
+        $res['error']['message'] = 'Username or password is incorrect!';
         if ($this->request->is('post')) {
             if ($this->Auth->user()) {
                 $res['success']['status_code'] = 1;
@@ -256,6 +258,7 @@ class UsersController extends AppController
                 if ($user) {
                     $this->Auth->setUser($user);
                     $token = $this->request->getCookie('csrfToken');
+                    $res['error'] = [];
                     $res['success']['status_code'] = 1;
                     $res['success']['message'] = 'Login Successfull!';
                     $res['result']['token'] = $token;
