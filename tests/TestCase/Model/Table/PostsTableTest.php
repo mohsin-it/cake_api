@@ -25,6 +25,7 @@ class PostsTableTest extends TestCase
      */
     public $fixtures = [
         'app.posts',
+        'app.pets',
         'app.users'
     ];
 

@@ -135,18 +135,18 @@ class UsersController extends AppController
         $this->response->type('application/json');
         $request = $this->request->getData();
         $user = $this->Users->newEntity($request);
-        if (!trim($user->first_name)) {
-            $res['error']['status_code'] = 0;
-            $res['error']['message'] = 'First Name is required!';
-            echo json_encode($res);
-            exit;
-        }
-        if (!trim($user->last_name)) {
-            $res['error']['status_code'] = 0;
-            $res['error']['message'] = 'Last Name is required!';
-            echo json_encode($res);
-            exit;
-        }
+        // if (!trim($user->first_name)) {
+        //     $res['error']['status_code'] = 0;
+        //     $res['error']['message'] = 'First Name is required!';
+        //     echo json_encode($res);
+        //     exit;
+        // }
+        // if (!trim($user->last_name)) {
+        //     $res['error']['status_code'] = 0;
+        //     $res['error']['message'] = 'Last Name is required!';
+        //     echo json_encode($res);
+        //     exit;
+        // }
         if (!trim($user->email)) {
             $res['error']['status_code'] = 0;
             $res['error']['message'] = 'Email is required!';
@@ -248,9 +248,10 @@ class UsersController extends AppController
         $res['error'] = [];
         $res['success'] = [];
         $res['error']['status_code'] = 0;
-        $res['error']['message'] = 'Username or password is incorrect!';
+        $res['error']['message'] = 'Please Login!';
         if ($this->request->is('post')) {
             if ($this->Auth->user()) {
+                $res['error'] = [];
                 $res['success']['status_code'] = 1;
                 $res['success']['message'] = 'Already LoggedIn!';
             } else {
