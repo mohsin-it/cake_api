@@ -2,6 +2,7 @@
 namespace App\Controller;
 
 use App\Controller\AppController;
+use Cake\Routing\Router;
 
 /**
  * Posts Controller
@@ -174,6 +175,43 @@ class PostsController extends AppController
             $res['error']['message'] = 'Error while uploading media!';
         }
 
+        $responseResult = json_encode($res);
+        $this->response->type('json');
+        $this->response->body($responseResult);
+    }
+
+    public function getActivity($uniq_id = null)
+    {
+        $target_dir = HOME . 'posts/' . $this->Auth->user('id') . '/';
+      //  echo '<img src="'. $target_dir . '51/35995460_1533988659.png" >';exit;
+        $res['error'] = [];
+        $res['success'] = [];
+        $res['result'] = [];
+        if (!trim($uniq_id)) {
+            $res['error']['status_code'] = 0;
+            $res['error']['message'] = 'Empty request!';
+            echo json_encode($res);
+            exit;
+        }
+        $this->loadModel('Profiles');
+        $profile = $this->Profiles->findByUniq_id(trim($uniq_id))->select('id')->first();
+        if (!$profile['id'] || $profile['id'] < 1) {
+            $res['error']['status_code'] = 0;
+            $res['error']['message'] = 'Sorry, Profile does not exist';
+            echo json_encode($res);
+            exit;
+        }
+        $my_posts = $this->Posts->find('all', [
+            'conditions' => ['pet_id' => $profile['id']],
+            'fields' => ['media', 'caption', 'created', 'modified'],
+        ])->toArray();
+        if ($my_posts) {
+            $res['result']['FilePath'] = $target_dir;
+            $res['result']['Posts'] = $my_posts;
+        } else {
+            $res['error']['status_code'] = 0;
+            $res['error']['message'] = 'No item published for this profile.';
+        }
         $responseResult = json_encode($res);
         $this->response->type('json');
         $this->response->body($responseResult);

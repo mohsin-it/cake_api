@@ -16,7 +16,7 @@ namespace App\Controller;
 
 use Cake\Controller\Controller;
 use Cake\Event\Event;
-
+use Cake\Routing\Router;
 /**
  * Application Controller
  *
@@ -94,6 +94,7 @@ class AppController extends Controller
                 $this->set('roleAccess', $roleAccess);
             }
         }
+        define('HOME',Router::url('/', true));
     }
     public function beforeRender(Event $event)
     {
