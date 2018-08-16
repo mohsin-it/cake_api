@@ -2,7 +2,6 @@
 namespace App\Controller;
 
 use App\Controller\AppController;
-use Cake\Routing\Router;
 
 /**
  * Posts Controller
@@ -20,104 +19,6 @@ class PostsController extends AppController
         parent::initialize();
         $this->loadComponent('Format');
         $this->autoRender = false;
-    }
-    /**
-     * Index method
-     *
-     * @return \Cake\Http\Response|void
-     */
-    public function index()
-    {
-        $this->paginate = [
-            'contain' => ['Pets', 'Users'],
-        ];
-        $posts = $this->paginate($this->Posts);
-
-        $this->set(compact('posts'));
-    }
-
-    /**
-     * View method
-     *
-     * @param string|null $id Post id.
-     * @return \Cake\Http\Response|void
-     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
-     */
-    public function view($id = null)
-    {
-        $post = $this->Posts->get($id, [
-            'contain' => ['Pets', 'Users'],
-        ]);
-
-        $this->set('post', $post);
-    }
-
-    /**
-     * Add method
-     *
-     * @return \Cake\Http\Response|null Redirects on successful add, renders view otherwise.
-     */
-    public function add()
-    {
-        $post = $this->Posts->newEntity();
-        if ($this->request->is('post')) {
-            $post = $this->Posts->patchEntity($post, $this->request->getData());
-            if ($this->Posts->save($post)) {
-                $this->Flash->success(__('The post has been saved.'));
-
-                return $this->redirect(['action' => 'index']);
-            }
-            $this->Flash->error(__('The post could not be saved. Please, try again.'));
-        }
-        $pets = $this->Posts->Pets->find('list', ['limit' => 200]);
-        $users = $this->Posts->Users->find('list', ['limit' => 200]);
-        $this->set(compact('post', 'pets', 'users'));
-    }
-
-    /**
-     * Edit method
-     *
-     * @param string|null $id Post id.
-     * @return \Cake\Http\Response|null Redirects on successful edit, renders view otherwise.
-     * @throws \Cake\Network\Exception\NotFoundException When record not found.
-     */
-    public function edit($id = null)
-    {
-        $post = $this->Posts->get($id, [
-            'contain' => [],
-        ]);
-        if ($this->request->is(['patch', 'post', 'put'])) {
-            $post = $this->Posts->patchEntity($post, $this->request->getData());
-            if ($this->Posts->save($post)) {
-                $this->Flash->success(__('The post has been saved.'));
-
-                return $this->redirect(['action' => 'index']);
-            }
-            $this->Flash->error(__('The post could not be saved. Please, try again.'));
-        }
-        $pets = $this->Posts->Pets->find('list', ['limit' => 200]);
-        $users = $this->Posts->Users->find('list', ['limit' => 200]);
-        $this->set(compact('post', 'pets', 'users'));
-    }
-
-    /**
-     * Delete method
-     *
-     * @param string|null $id Post id.
-     * @return \Cake\Http\Response|null Redirects to index.
-     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
-     */
-    public function delete($id = null)
-    {
-        $this->request->allowMethod(['post', 'delete']);
-        $post = $this->Posts->get($id);
-        if ($this->Posts->delete($post)) {
-            $this->Flash->success(__('The post has been deleted.'));
-        } else {
-            $this->Flash->error(__('The post could not be deleted. Please, try again.'));
-        }
-
-        return $this->redirect(['action' => 'index']);
     }
 
     // APIs
@@ -183,7 +84,7 @@ class PostsController extends AppController
     public function getActivity($uniq_id = null)
     {
         $target_dir = HOME . 'posts/' . $this->Auth->user('id') . '/';
-      //  echo '<img src="'. $target_dir . '51/35995460_1533988659.png" >';exit;
+        //  echo '<img src="'. $target_dir . '51/35995460_1533988659.png" >';exit;
         $res['error'] = [];
         $res['success'] = [];
         $res['result'] = [];
@@ -197,13 +98,14 @@ class PostsController extends AppController
         $profile = $this->Profiles->findByUniq_id(trim($uniq_id))->select('id')->first();
         if (!$profile['id'] || $profile['id'] < 1) {
             $res['error']['status_code'] = 0;
-            $res['error']['message'] = 'Sorry, Profile does not exist';
+            $res['error']['message'] = 'Sorry, Profile does not exist.';
             echo json_encode($res);
             exit;
         }
         $my_posts = $this->Posts->find('all', [
-            'conditions' => ['pet_id' => $profile['id']],
-            'fields' => ['media', 'caption', 'created', 'modified'],
+            'conditions' => ['pet_id' => $profile['id'],'is_active' => 1],
+            'fields' => ['id','media', 'caption', 'created', 'modified'],
+            'order' => ['created']
         ])->toArray();
         if ($my_posts) {
             $res['result']['FilePath'] = $target_dir;
