@@ -36,32 +36,42 @@ class PostsController extends AppController
 
         $request = $this->request->getData();
 
-        $temp = explode('.', $request['file']['name']);
-        if (!in_array(end($temp), $ext_list)) {
+        $this->loadModel('Profiles');
+        $profile = $this->Profiles->findByUniq_id($request['profile_id'])->select('id')->first();
+        if (!$profile['id'] || $profile['id'] < 1) {
             $res['error']['status_code'] = 0;
-            $res['error']['message'] = 'Sorry, only JPG, JPEG, PNG & GIF files are allowed.';
+            $res['error']['message'] = 'Sorry, Profile does not exist';
             echo json_encode($res);
             exit;
         }
-        $new_name = rand() . '_' . time() . '.' . end($temp);
 
-        $post = $this->Posts->newEntity();
-        if (move_uploaded_file($request['file']['tmp_name'], $target_dir . $new_name)) {
-            $post = $this->Posts->patchEntity($post, $request);
-
-            $this->loadModel('Profiles');
-            $profile = $this->Profiles->findByUniq_id($request['profile_id'])->select('id')->first();
-            if (!$profile['id'] || $profile['id'] < 1) {
+        if (empty($request['file']) && empty($request['caption'])) {
+            $res['error']['status_code'] = 0;
+            $res['error']['message'] = 'Please Upload Either Picture or Text.';
+            echo json_encode($res);
+            exit;
+        }
+        $isUploaded = false;
+        $new_name = null;
+        if (isset($request['file'])) {
+            $temp = explode('.', $request['file']['name']);
+            if (!in_array(end($temp), $ext_list)) {
                 $res['error']['status_code'] = 0;
-                $res['error']['message'] = 'Sorry, Profile does not exist';
+                $res['error']['message'] = 'Sorry, only JPG, JPEG, PNG & GIF files are allowed.';
                 echo json_encode($res);
                 exit;
             }
+            $new_name = rand() . '_' . time() . '.' . end($temp);
+            $isUploaded = move_uploaded_file($request['file']['tmp_name'], $target_dir . $new_name);
+        }
+        $post = $this->Posts->newEntity();
+        if (!empty($request['caption']) || $isUploaded == true) {
+            $post = $this->Posts->patchEntity($post, $request);
             $post->media = $new_name;
             $post->pet_id = $profile['id'];
             $post->user_id = $this->Auth->user('id');
             $post->status = 1;
-            $post->host = $this->get_client_ip_server;
+            $post->host = null;
             $post->created = GMT_DATETIME;
             $post->modified = GMT_DATETIME;
             if ($this->Posts->save($post)) {
@@ -69,11 +79,11 @@ class PostsController extends AppController
                 $res['success']['message'] = 'Published Successfully!';
             } else {
                 $res['error']['status_code'] = 0;
-                $res['error']['message'] = 'Error while saving data!';
+                $res['error']['message'] = 'Error while publishing the post!';
             }
         } else {
             $res['error']['status_code'] = 0;
-            $res['error']['message'] = 'Error while uploading media!';
+            $res['error']['message'] = 'Error while publishing the post!';
         }
 
         $responseResult = json_encode($res);
@@ -95,6 +105,7 @@ class PostsController extends AppController
             exit;
         }
         $this->loadModel('Profiles');
+        $this->loadModel('Comments');
         $profile = $this->Profiles->findByUniq_id(trim($uniq_id))->select('id')->first();
         if (!$profile['id'] || $profile['id'] < 1) {
             $res['error']['status_code'] = 0;
@@ -103,13 +114,32 @@ class PostsController extends AppController
             exit;
         }
         $my_posts = $this->Posts->find('all', [
-            'conditions' => ['pet_id' => $profile['id'],'is_active' => 1],
-            'fields' => ['id','media', 'caption', 'created', 'modified'],
-            'order' => ['created']
+            'contain' => ['Comments' => [
+                'conditions' => ['Comments.is_active' => 1],
+                'sort' => ['Comments.created' => 'DESC'],
+            ]],
+            'conditions' => ['pet_id' => $profile['id'], 'Posts.is_active' => 1],
+            'fields' => ['Posts.id', 'Posts.media', 'Posts.caption', 'Posts.created', 'Posts.modified'],
+            'order' => ['Posts.created DESC'],
         ])->toArray();
+
         if ($my_posts) {
+            $this->loadModel('Likes');
+            for ($i = 0; $i < count($my_posts); $i++) {
+                $data[$i]['id'] = $my_posts[$i]->id;
+                $data[$i]['media'] = $my_posts[$i]->media;
+                $data[$i]['caption'] = $my_posts[$i]->caption;
+                $data[$i]['created'] = $my_posts[$i]->created;
+                $data[$i]['modified'] = $my_posts[$i]->modified;
+                $query = $this->Likes->find('all')
+                    ->where(['Likes.post_id' => $my_posts[$i]->id, 'Likes.is_active' => 1]);
+                $total_likes = $query->count();
+                $data[$i]['total_likes'] = $total_likes;
+                $data[$i]['Comments'] = $my_posts[$i]['comments'];
+
+            }
             $res['result']['FilePath'] = $target_dir;
-            $res['result']['Posts'] = $my_posts;
+            $res['result']['Posts'] = $data;
         } else {
             $res['error']['status_code'] = 0;
             $res['error']['message'] = 'No item published for this profile.';

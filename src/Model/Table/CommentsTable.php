@@ -59,23 +59,7 @@ class CommentsTable extends Table
      */
     public function validationDefault(Validator $validator)
     {
-        $validator
-            ->integer('id')
-            ->allowEmpty('id', 'create');
-
-        $validator
-            ->scalar('comment')
-            ->allowEmpty('comment');
-
-        $validator
-            ->integer('parent_comment')
-            ->allowEmpty('parent_comment');
-
-        $validator
-            ->boolean('is_active')
-            ->requirePresence('is_active', 'create')
-            ->notEmpty('is_active');
-
+    
         return $validator;
     }
 

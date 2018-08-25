@@ -49,6 +49,10 @@ class PostsTable extends Table
             'foreignKey' => 'user_id',
             'joinType' => 'INNER'
         ]);
+        $this->hasMany('Comments', [
+            'foreignKey' => 'post_id',
+            'joinType' => 'LEFT'
+        ]);
     }
 
     /**
@@ -71,8 +75,6 @@ class PostsTable extends Table
      */
     public function buildRules(RulesChecker $rules)
     {
-        $rules->add($rules->existsIn(['pet_id'], 'Pets'));
-        $rules->add($rules->existsIn(['user_id'], 'Users'));
 
         return $rules;
     }

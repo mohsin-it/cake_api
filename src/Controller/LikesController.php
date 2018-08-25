@@ -77,6 +77,10 @@ class LikesController extends AppController
                 $res['error']['message'] = 'Error while saving data!';
             }
         }
+        $query = $this->Likes->find('all')
+            ->where(['Likes.post_id' => $like->post_id, 'Likes.is_active' => 1]);
+        $total_likes = $query->count();
+        $res['result']['TotalLikes'] = $total_likes;
         $responseResult = json_encode($res);
         $this->response->type('json');
         $this->response->body($responseResult);

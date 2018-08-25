@@ -52,8 +52,13 @@ class CommentsController extends AppController
         $comment->modified = GMT_DATETIME;
 
         if ($this->Comments->save($comment)) {
+            $query = $this->Comments->find('all')
+                ->where(['Comments.post_id' => $comment->post_id, 'Comments.is_active' => 1])
+                ->order(['Comments.created DESC']);
+            $comments = $query->toArray();
             $res['success']['status_code'] = 1;
             $res['success']['message'] = 'Comment Posted Successfully.';
+            $res['result']['Comments'] = $comments;
         } else {
             $res['error']['status_code'] = 0;
             $res['error']['message'] = 'Error while saving data!';
@@ -86,7 +91,8 @@ class CommentsController extends AppController
         }
 
         $query = $this->Comments->find('all')
-            ->where(['Comments.post_id' => $data['post_id'], 'Comments.is_active' => 1]);
+            ->where(['Comments.post_id' => $data['post_id'], 'Comments.is_active' => 1])
+            ->order(['Comments.created DESC']);
         $total_comments = $query->count();
         $comments = $query->toArray();
         $res['result']['TotalComments'] = $total_comments;
