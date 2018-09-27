@@ -3,7 +3,9 @@ namespace App\Controller\Component;
 
 use Cake\Controller\Component;
 use Cake\Mailer\Email;
+use Cake\ORM\TableRegistry;
 use Cake\Routing\Router;
+use Cake\Auth\DefaultPasswordHasher;
 
 /**
  * Fomrmat component
@@ -40,5 +42,23 @@ class FormatComponent extends Component
 
         $uniq_id = md5(rand());
         return $uniq_id;
+    }
+    public function getProfileId($uniq_id = null)
+    {
+        $this->Profiles = TableRegistry::get('Profiles');
+        $profile = $this->Profiles->findByUniq_id($uniq_id)->select('id')->first();
+        if (!$profile['id'] || $profile['id'] < 1) {
+            return null;
+        } else {
+            return $profile['id'];
+        }
+    }
+    public function checkPassword($reqpassword,$password)
+    {
+        if (strlen($password) > 0) {
+            $hashPswdObj = new DefaultPasswordHasher;
+            $hashpswd = $hashPswdObj->check($reqpassword,$password);
+            return $hashpswd;
+        }
     }
 }

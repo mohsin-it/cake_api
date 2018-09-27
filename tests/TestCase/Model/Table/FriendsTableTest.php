@@ -1,22 +1,22 @@
 <?php
 namespace App\Test\TestCase\Model\Table;
 
-use App\Model\Table\ProfilesTable;
+use App\Model\Table\FriendsTable;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
 
 /**
- * App\Model\Table\ProfilesTable Test Case
+ * App\Model\Table\FriendsTable Test Case
  */
-class ProfilesTableTest extends TestCase
+class FriendsTableTest extends TestCase
 {
 
     /**
      * Test subject
      *
-     * @var \App\Model\Table\ProfilesTable
+     * @var \App\Model\Table\FriendsTable
      */
-    public $Profiles;
+    public $Friends;
 
     /**
      * Fixtures
@@ -24,10 +24,10 @@ class ProfilesTableTest extends TestCase
      * @var array
      */
     public $fixtures = [
-        'app.profiles',
-        'app.users',
-        'app.pets',
-        'app.breeds'
+        'app.friends',
+        'app.requesters',
+        'app.receivers',
+        'app.actioners'
     ];
 
     /**
@@ -38,8 +38,8 @@ class ProfilesTableTest extends TestCase
     public function setUp()
     {
         parent::setUp();
-        $config = TableRegistry::exists('Profiles') ? [] : ['className' => ProfilesTable::class];
-        $this->Profiles = TableRegistry::get('Profiles', $config);
+        $config = TableRegistry::exists('Friends') ? [] : ['className' => FriendsTable::class];
+        $this->Friends = TableRegistry::get('Friends', $config);
     }
 
     /**
@@ -49,7 +49,7 @@ class ProfilesTableTest extends TestCase
      */
     public function tearDown()
     {
-        unset($this->Profiles);
+        unset($this->Friends);
 
         parent::tearDown();
     }

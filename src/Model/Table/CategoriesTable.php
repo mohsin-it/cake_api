@@ -7,22 +7,22 @@ use Cake\ORM\Table;
 use Cake\Validation\Validator;
 
 /**
- * Posts Model
+ * Categories Model
  *
- * @property \App\Model\Table\PetsTable|\Cake\ORM\Association\BelongsTo $Pets
  * @property \App\Model\Table\UsersTable|\Cake\ORM\Association\BelongsTo $Users
+ * @property \App\Model\Table\PostsTable|\Cake\ORM\Association\HasMany $Posts
  *
- * @method \App\Model\Entity\Post get($primaryKey, $options = [])
- * @method \App\Model\Entity\Post newEntity($data = null, array $options = [])
- * @method \App\Model\Entity\Post[] newEntities(array $data, array $options = [])
- * @method \App\Model\Entity\Post|bool save(\Cake\Datasource\EntityInterface $entity, $options = [])
- * @method \App\Model\Entity\Post patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
- * @method \App\Model\Entity\Post[] patchEntities($entities, array $data, array $options = [])
- * @method \App\Model\Entity\Post findOrCreate($search, callable $callback = null, $options = [])
+ * @method \App\Model\Entity\Category get($primaryKey, $options = [])
+ * @method \App\Model\Entity\Category newEntity($data = null, array $options = [])
+ * @method \App\Model\Entity\Category[] newEntities(array $data, array $options = [])
+ * @method \App\Model\Entity\Category|bool save(\Cake\Datasource\EntityInterface $entity, $options = [])
+ * @method \App\Model\Entity\Category patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
+ * @method \App\Model\Entity\Category[] patchEntities($entities, array $data, array $options = [])
+ * @method \App\Model\Entity\Category findOrCreate($search, callable $callback = null, $options = [])
  *
  * @mixin \Cake\ORM\Behavior\TimestampBehavior
  */
-class PostsTable extends Table
+class CategoriesTable extends Table
 {
 
     /**
@@ -35,27 +35,17 @@ class PostsTable extends Table
     {
         parent::initialize($config);
 
-        $this->setTable('posts');
-        $this->setDisplayField('id');
-        $this->setPrimaryKey('id');
+        $this->setTable('categories');
+        $this->setDisplayField('name');
 
         $this->addBehavior('Timestamp');
 
-        $this->belongsTo('Pets', [
-            'foreignKey' => 'pet_id',
-            'joinType' => 'INNER'
-        ]);
         $this->belongsTo('Users', [
             'foreignKey' => 'user_id',
             'joinType' => 'INNER'
         ]);
-        $this->hasMany('Comments', [
-            'foreignKey' => 'post_id',
-            'joinType' => 'LEFT'
-        ]);
-        $this->belongsTo('Categories', [
-            'foreignKey' => 'category_id',
-            'joinType' => 'LEFT'
+        $this->hasMany('Posts', [
+            'foreignKey' => 'category_id'
         ]);
     }
 
@@ -67,6 +57,12 @@ class PostsTable extends Table
      */
     public function validationDefault(Validator $validator)
     {
+        $validator
+            ->scalar('name')
+            ->maxLength('name', 200)
+            ->requirePresence('name', 'create')
+            ->notEmpty('name');
+
         return $validator;
     }
 
@@ -79,6 +75,7 @@ class PostsTable extends Table
      */
     public function buildRules(RulesChecker $rules)
     {
+        $rules->add($rules->existsIn(['user_id'], 'Users'));
 
         return $rules;
     }

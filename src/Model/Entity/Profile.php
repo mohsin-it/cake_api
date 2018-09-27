@@ -21,9 +21,8 @@ use Cake\ORM\Entity;
  * @property string $mix
  * @property \Cake\I18n\FrozenTime $created
  * @property \Cake\I18n\FrozenTime $modified
- *
- * @property \App\Model\Entity\Uniq $uniq
- * @property \App\Model\Entity\Owner $owner
+ * 
+ * 
  * @property \App\Model\Entity\Pet $pet
  * @property \App\Model\Entity\Breed $breed
  */
@@ -54,8 +53,6 @@ class Profile extends Entity
         'mix' => true,
         'created' => true,
         'modified' => true,
-        'uniq' => true,
-        'owner' => true,
         'pet' => true,
         'breed' => true
     ];

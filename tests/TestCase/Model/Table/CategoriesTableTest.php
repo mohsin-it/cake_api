@@ -1,22 +1,22 @@
 <?php
 namespace App\Test\TestCase\Model\Table;
 
-use App\Model\Table\ProfilesTable;
+use App\Model\Table\CategoriesTable;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
 
 /**
- * App\Model\Table\ProfilesTable Test Case
+ * App\Model\Table\CategoriesTable Test Case
  */
-class ProfilesTableTest extends TestCase
+class CategoriesTableTest extends TestCase
 {
 
     /**
      * Test subject
      *
-     * @var \App\Model\Table\ProfilesTable
+     * @var \App\Model\Table\CategoriesTable
      */
-    public $Profiles;
+    public $Categories;
 
     /**
      * Fixtures
@@ -24,10 +24,9 @@ class ProfilesTableTest extends TestCase
      * @var array
      */
     public $fixtures = [
-        'app.profiles',
+        'app.categories',
         'app.users',
-        'app.pets',
-        'app.breeds'
+        'app.posts'
     ];
 
     /**
@@ -38,8 +37,8 @@ class ProfilesTableTest extends TestCase
     public function setUp()
     {
         parent::setUp();
-        $config = TableRegistry::exists('Profiles') ? [] : ['className' => ProfilesTable::class];
-        $this->Profiles = TableRegistry::get('Profiles', $config);
+        $config = TableRegistry::exists('Categories') ? [] : ['className' => CategoriesTable::class];
+        $this->Categories = TableRegistry::get('Categories', $config);
     }
 
     /**
@@ -49,7 +48,7 @@ class ProfilesTableTest extends TestCase
      */
     public function tearDown()
     {
-        unset($this->Profiles);
+        unset($this->Categories);
 
         parent::tearDown();
     }

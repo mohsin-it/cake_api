@@ -65,13 +65,17 @@ class PostsController extends AppController
             $isUploaded = move_uploaded_file($request['file']['tmp_name'], $target_dir . $new_name);
         }
         $post = $this->Posts->newEntity();
+        $post->category_id = 0;
+        if ($isUploaded == true) {
+            $post->category_id = $request['category_id'];
+        }
         if (!empty($request['caption']) || $isUploaded == true) {
             $post = $this->Posts->patchEntity($post, $request);
             $post->media = $new_name;
             $post->pet_id = $profile['id'];
             $post->user_id = $this->Auth->user('id');
             $post->status = 1;
-            $post->host = null;
+            $post->host = $this->request->clientIp();
             $post->created = GMT_DATETIME;
             $post->modified = GMT_DATETIME;
             if ($this->Posts->save($post)) {
@@ -161,5 +165,89 @@ class PostsController extends AppController
             $ip = $_SERVER['REMOTE_ADDR'];
         }
         return $ip;
+    }
+
+    public function addCategory()
+    {
+        $res['result'] = [];
+        $res['error'] = [];
+        $res['success'] = [];
+
+        $this->loadModel('Categories');
+        $request = $this->request->getData();
+        if (!$request['name']) {
+            $res['error']['status_code'] = 0;
+            $res['error']['message'] = 'Category name can not be left blank.';
+            echo json_encode($res);
+            exit;
+        }
+        $category = $this->Categories->newEntity();
+        $category = $this->Categories->patchEntity($category, $request);
+        $category->name = $request['name'];
+        $category->user_id = $this->Auth->user('id');
+        $category->created = GMT_DATETIME;
+        $category->modified = GMT_DATETIME;
+        if ($this->Categories->save($category)) {
+            $res['success']['status_code'] = 1;
+            $res['success']['message'] = 'Category created Successfully!';
+        } else {
+            $res['error']['status_code'] = 0;
+            $res['error']['message'] = 'Error while creating category!';
+        }
+        $responseResult = json_encode($res);
+        $this->response->type('json');
+        $this->response->body($responseResult);
+    }
+
+    public function listCategory()
+    {
+        $res['error'] = [];
+        $res['success'] = [];
+        $res['result'] = [];
+
+        $this->loadModel('Categories');
+        $categories = $this->Categories->find('all', [
+            'keyField' => 'id',
+            'valueField' => 'name',
+            'conditions' => ['Categories.is_active' => 1, 'Categories.user_id' => $this->Auth->user('id')],
+        ])->toArray();
+
+        if ($categories && !empty($categories)) {
+            for ($i = 0; $i < count($categories); $i++) {
+                $data[$i]['id'] = $categories[$i]['id'];
+                $data[$i]['name'] = $categories[$i]['name'];
+            }
+            $res['result'] = $data;
+        } else {
+            $res['error']['status_code'] = 0;
+            $res['error']['message'] = 'No category found';
+        }
+
+        $responseResult = json_encode($res);
+        $this->response->type('json');
+        $this->response->body($responseResult);
+    }
+    public function postByCategory(){
+        $res['error'] = [];
+        $res['success'] = [];
+        $res['result'] = [];
+        $target_dir = HOME . 'posts/' . $this->Auth->user('id') . '/';
+
+        $this->loadModel('Categories');
+        $query = $this->Categories->find('all', [
+            'contain' => ['Posts' => [
+                'conditions' => ['Posts.user_id' =>  $this->Auth->user('id')],
+            ]],
+            'conditions' => ['Categories.user_id' =>$this->Auth->user('id')],
+            //'fields' => ['Categories.id', 'Categories.name', 'Posts.media'],
+        ])->toList();
+        if (isset($query) && !empty($query)) {
+           $res['result']['FilePath'] = $target_dir;
+           $res['result']['Posts'] = $query;
+        }
+        
+        $responseResult = json_encode($res);
+        $this->response->type('json');
+        $this->response->body($responseResult);
     }
 }

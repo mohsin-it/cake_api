@@ -9,8 +9,7 @@ use Cake\Validation\Validator;
 /**
  * Profiles Model
  *
- * @property \App\Model\Table\UniqsTable|\Cake\ORM\Association\BelongsTo $Uniqs
- * @property \App\Model\Table\OwnersTable|\Cake\ORM\Association\BelongsTo $Owners
+ * 
  * @property \App\Model\Table\PetsTable|\Cake\ORM\Association\BelongsTo $Pets
  * @property \App\Model\Table\BreedsTable|\Cake\ORM\Association\BelongsTo $Breeds
  *
@@ -42,7 +41,7 @@ class ProfilesTable extends Table
         $this->setPrimaryKey('id');
 
         $this->addBehavior('Timestamp');
-
+        
         $this->belongsTo('Users', [
             'foreignKey' => 'owner_id',
             'joinType' => 'INNER'

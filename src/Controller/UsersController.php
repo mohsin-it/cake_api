@@ -320,4 +320,98 @@ class UsersController extends AppController
         $this->response->type('json');
         $this->response->body($responseResult);
     }
+
+    public function editUser()
+    {
+        $res['result'] = [];
+        $res['error'] = [];
+        $res['success'] = [];
+
+        $request = $this->request->getData();
+        if (!$request) {
+            $res['error']['status_code'] = 0;
+            $res['error']['message'] = 'Empty Request!';
+            echo json_encode($res);
+            exit;
+        }
+        
+        $user = $this->Users->find('all', [
+            'conditions' => ['id' => $this->Auth->user('id')],
+        ])->first();
+        $user->first_name = $request['first_name'];
+        $user->last_name = $request['last_name'];
+        $user->country = $request['country'];
+        $user->city = $request['city'];
+        $user->modified = GMT_DATETIME;
+        if ($this->Users->save($user)) {
+            if ($user->role_id == 1) {
+                $this->loadModel('UserDetails');
+                $user_detail = $this->UserDetails->find('all', [
+                    'conditions' => ['user_id' => $this->Auth->user('id')],
+                ])->first();
+                $user_detail->profession_id = $request['profession_id'];
+                $user_detail->company = $request['company'];
+                $user_detail->address = $request['address'];
+                $user_detail->phone = $request['phone'];
+                $user_detail->modified = GMT_DATETIME;
+                $this->UserDetails->save($user_detail);
+            }
+            $res['success']['status_code'] = 1;
+            $res['success']['message'] = 'Profile updated successfuly.';
+        } else {
+            $res['error']['status_code'] = 0;
+            $res['error']['message'] = 'Unable to update profile.Plese try again!';
+        }
+        $responseResult = json_encode($res);
+        $this->response->type('json');
+        $this->response->body($responseResult);
+    }
+
+    public function changePassword()
+    {
+        $res['result'] = [];
+        $res['error'] = [];
+        $res['success'] = [];
+        $user = $this->Users->find('all', [
+            'conditions' => [
+                'id' => $this->Auth->user('id'),
+            ],
+        ])->first();
+        $request = $this->request->getData();
+        if (!$request) {
+            $res['error']['status_code'] = 0;
+            $res['error']['message'] = 'Empty Request!';
+            echo json_encode($res);
+            exit;
+        }
+        if ($user) {
+            if (!$this->Format->checkPassword($request['old_password'], $user->password)) {
+                $res['error']['status_code'] = 0;
+                $res['error']['message'] = 'Password Does not matched!';
+                echo json_encode($res);
+                exit;
+            }
+        } else {
+            $res['error']['status_code'] = 0;
+            $res['error']['message'] = 'User not found!';
+            echo json_encode($res);
+            exit;
+        }
+
+        if ($request['password']) {
+            $user->password = $request['password'];
+            $user->modified = GMT_DATETIME;
+            if ($this->Users->save($user)) {
+                $res['success']['status_code'] = 1;
+                $res['success']['message'] = 'Password Changed Successfully.';
+            }
+        } else {
+            $res['error']['status_code'] = 0;
+            $res['error']['message'] = 'Please enter required fields!';
+        }
+
+        $responseResult = json_encode($res);
+        $this->response->type('json');
+        $this->response->body($responseResult);
+    }
 }

@@ -2,6 +2,7 @@
 namespace App\Controller;
 
 use App\Controller\AppController;
+use Cake\Datasource\ConnectionManager;
 
 /**
  * Profiles Controller
@@ -81,7 +82,7 @@ class ProfilesController extends AppController
                 // 'fields' => ['Profiles.pet_name', 'Profiles.id'],
             ])->toArray();
             if (isset($profiles) && !empty($profiles)) {
-                for($i=0;$i<count($profiles);$i++){
+                for ($i = 0; $i < count($profiles); $i++) {
                     $data[$i]['id'] = $profiles[$i]['uniq_id'];
                     $data[$i]['name'] = $profiles[$i]['pet_name'];
                 }
@@ -129,5 +130,333 @@ class ProfilesController extends AppController
         $this->response->type('json');
         $this->response->body($responseResult);
     }
+    public function searchProfile()
+    {
+        $res['error'] = [];
+        $res['success'] = [];
+        $res['result'] = [];
 
+        $request = $this->request->getData();
+        $keyword = '';
+
+        if (!$request['profile_id']) {
+            $res['error']['status_code'] = 0;
+            $res['error']['message'] = 'Empty Request!';
+            echo json_encode($res);
+            exit;
+        }
+        $keyword = $request['keyword'];
+        $profile_id = $request['profile_id'];
+
+        $this->loadModel('Friends');
+        $requester = $this->Format->getProfileId($profile_id);
+        $sql = "SELECT * FROM friends WHERE status IN (1,2,4) AND (requester_id=$requester OR receiver_id=$requester)";
+        $connection = ConnectionManager::get('default');
+        $results = $connection->execute($sql)->fetchAll('assoc');
+        $ids[] = $requester;
+        foreach ($results as $k => $val) {
+            $ids[] = $val['requester_id'];
+            $ids[] = $val['receiver_id'];
+        }
+        //print_r($ids);exit;
+        $profiles = $this->Profiles->find('all', [
+            'conditions' => ['Profiles.pet_name LIKE' => "%$keyword%", 'Profiles.id NOT IN' => array_unique($ids)],
+            // 'fields' => ['Profiles.pet_name', 'Profiles.id'],
+        ])->toArray();
+        if (isset($profiles) && !empty($profiles)) {
+            for ($i = 0; $i < count($profiles); $i++) {
+                $data[$i]['id'] = $profiles[$i]['uniq_id'];
+                $data[$i]['name'] = $profiles[$i]['pet_name'];
+            }
+            $res['result'] = $data;
+        } else {
+            $res['error']['status_code'] = 0;
+            $res['error']['message'] = 'No result found!';
+        }
+        $responseResult = json_encode($res);
+        $this->response->type('json');
+        $this->response->body($responseResult);
+    }
+    public function sendRequest()
+    {
+        $res['error'] = [];
+        $res['success'] = [];
+        $res['result'] = [];
+
+        $request = $this->request->getData();
+        $st = $request['status'];
+        $this->loadModel('Friends');
+
+        $requester = $this->Format->getProfileId($request['profile_id']);
+        $receiver = $this->Format->getProfileId($request['receiver_id']);
+        $actioner = $this->Format->getProfileId($request['profile_id']);
+        switch ($st) {
+            case 1:
+                $isExist = $this->Friends->find('all', [
+                    'conditions' => ['OR' => [
+                        'requester_id IN' => array($requester, $receiver),
+                    ],
+                        [
+                            'receiver_id IN' => array($requester, $receiver)],
+                    ],
+                ])->first();
+                if (!empty($isExist)) {
+                    if ($isExist['status'] == 3 || $isExist['status'] == 5) {
+                        $isExist->status = $st;
+                        $isExist->modified = GMT_DATETIME;
+                        if ($this->Friends->save($isExist)) {
+                            $res['success']['status_code'] = 1;
+                            $res['success']['message'] = 'Request Sent.';
+                        } else {
+                            $res['error']['status_code'] = 0;
+                            $res['error']['message'] = 'Unable to send request.';
+                        }
+                    } else if ($isExist['status'] == 2) {
+                        $res['error']['status_code'] = 0;
+                        $res['error']['message'] = 'Pet is already friend.';
+                    } else if ($isExist['status'] == 1) {
+                        $res['error']['status_code'] = 0;
+                        $res['error']['message'] = 'Request already sent.';
+                    } else if ($isExist['status'] == 4) {
+                        $res['error']['status_code'] = 0;
+                        $res['error']['message'] = 'Profile is blocked by user.';
+                    }
+                } else {
+                    $friend = $this->Friends->newEntity();
+                    $friend = $this->Friends->patchEntity($friend, $request);
+
+                    $friend->requester_id = $requester;
+                    $friend->receiver_id = $receiver;
+                    $friend->actioner_id = $requester;
+                    $friend->status = $st;
+                    $friend->created = GMT_DATETIME;
+                    $friend->modified = GMT_DATETIME;
+                    if ($this->Friends->save($friend)) {
+                        $res['success']['status_code'] = 1;
+                        $res['success']['message'] = 'Request Sent.';
+                    } else {
+                        $res['error']['status_code'] = 0;
+                        $res['error']['message'] = 'Unable to send request.';
+                    }
+                }
+                break;
+            case 2:
+                $friend = $this->Friends->find('all', [
+                    'conditions' => ['requester_id' => $requester, 'receiver_id' => $receiver],
+                ])->first();
+                if ($friend) {
+                    $friend->status = $st;
+                    $friend->modified = GMT_DATETIME;
+                    if ($this->Friends->save($friend)) {
+                        $res['success']['status_code'] = 1;
+                        $res['success']['message'] = 'Request accepted.';
+                    } else {
+                        $res['error']['status_code'] = 0;
+                        $res['error']['message'] = 'Pleas try again.';
+                    }
+                } else {
+                    $res['error']['status_code'] = 0;
+                    $res['error']['message'] = 'No Request or Request canceled by sender.';
+                }
+                break;
+            case 3:
+                $friend = $this->Friends->find('all', [
+                    'conditions' => ['requester_id' => $requester, 'receiver_id' => $receiver],
+                ])->first();
+                if ($friend) {
+                    $friend->status = $st;
+                    $friend->modified = GMT_DATETIME;
+                    if ($this->Friends->save($friend)) {
+                        $res['success']['status_code'] = 1;
+                        $res['success']['message'] = 'Request rejected.';
+                    } else {
+                        $res['error']['status_code'] = 0;
+                        $res['error']['message'] = 'Pleas try again.';
+                    }
+                } else {
+                    $res['error']['status_code'] = 0;
+                    $res['error']['message'] = 'No Request or Request canceled by sender.';
+                }
+                break;
+            case 4:
+                $friend = $this->Friends->find('all', [
+                    'conditions' => ['requester_id' => $requester, 'receiver_id' => $receiver],
+                ])->first();
+                if ($friend) {
+                    $friend->status = $st;
+                    $friend->modified = GMT_DATETIME;
+                    if ($this->Friends->save($friend)) {
+                        $res['success']['status_code'] = 1;
+                        $res['success']['message'] = 'Profile blocked.';
+                    } else {
+                        $res['error']['status_code'] = 0;
+                        $res['error']['message'] = 'Pleas try again.';
+                    }
+                } else {
+                    $res['error']['status_code'] = 0;
+                    $res['error']['message'] = 'No Request or Request canceled by sender.';
+                }
+                break;
+            case 5:
+                $friend = $this->Friends->find('all', [
+                    'conditions' => ['requester_id' => $requester, 'receiver_id' => $receiver],
+                ])->first();
+                if ($friend) {
+                    $friend->status = $st;
+                    $friend->modified = GMT_DATETIME;
+                    if ($this->Friends->save($friend)) {
+                        $res['success']['status_code'] = 1;
+                        $res['success']['message'] = 'Request canceled.';
+                    } else {
+                        $res['error']['status_code'] = 0;
+                        $res['error']['message'] = 'Pleas try again.';
+                    }
+                } else {
+                    $res['error']['status_code'] = 0;
+                    $res['error']['message'] = 'No Request or Request canceled by sender.';
+                }
+                break;
+
+        }
+        $responseResult = json_encode($res);
+        $this->response->type('json');
+        $this->response->body($responseResult);
+    }
+
+    public function newRequests()
+    {
+        $res['error'] = [];
+        $res['success'] = [];
+        $res['result'] = [];
+
+        $request = $this->request->getData();
+        $profile_id = $request['profile_id'];
+        $receiver = $this->Format->getProfileId($profile_id);
+
+        $this->loadModel('Friends');
+        $friends = $this->Friends->find('list', [
+            'conditions' => ['receiver_id' => $receiver, 'status' => 1],
+            'keyField' => 'id',
+            'valueField' => 'requester_id',
+        ])->toArray();
+
+        if (!empty($friends)) {
+            $profiles = $this->Profiles->find('all', [
+                'conditions' => ['Profiles.id IN' => $friends],
+            ])->toArray();
+            if (isset($profiles) && !empty($profiles)) {
+                for ($i = 0; $i < count($profiles); $i++) {
+                    $data[$i]['id'] = $profiles[$i]['uniq_id'];
+                    $data[$i]['name'] = $profiles[$i]['pet_name'];
+                }
+                $res['result'] = $data;
+            } else {
+                $res['error']['status_code'] = 0;
+                $res['error']['message'] = 'No new request found!';
+            }
+        } else {
+            $res['error']['status_code'] = 0;
+            $res['error']['message'] = 'No new request found!';
+        }
+        // print_r($friends);exit;
+        $responseResult = json_encode($res);
+        $this->response->type('json');
+        $this->response->body($responseResult);
+    }
+    public function sentRequests()
+    {
+        $res['error'] = [];
+        $res['success'] = [];
+        $res['result'] = [];
+
+        $request = $this->request->getData();
+        $profile_id = $request['profile_id'];
+        $requester = $this->Format->getProfileId($profile_id);
+
+        $this->loadModel('Friends');
+        $friends = $this->Friends->find('list', [
+            'conditions' => ['requester_id' => $requester, 'status' => 1],
+            'keyField' => 'id',
+            'valueField' => 'receiver_id',
+        ])->toArray();
+        if (!empty($friends)) {
+            $profiles = $this->Profiles->find('all', [
+                'conditions' => ['Profiles.id IN' => $friends],
+            ])->toArray();
+            if (isset($profiles) && !empty($profiles)) {
+                for ($i = 0; $i < count($profiles); $i++) {
+                    $data[$i]['id'] = $profiles[$i]['uniq_id'];
+                    $data[$i]['name'] = $profiles[$i]['pet_name'];
+                }
+                $res['result'] = $data;
+            } else {
+                $res['error']['status_code'] = 0;
+                $res['error']['message'] = 'No request sent!';
+            }
+        } else {
+            $res['error']['status_code'] = 0;
+            $res['error']['message'] = 'No request sent!';
+        }
+        // print_r($friends);exit;
+        $responseResult = json_encode($res);
+        $this->response->type('json');
+        $this->response->body($responseResult);
+    }
+    public function friendList()
+    {
+        $res['error'] = [];
+        $res['success'] = [];
+        $res['result'] = [];
+
+        $request = $this->request->getData();
+        if (!isset($request['profile_id'])) {
+            $res['error']['status_code'] = 0;
+            $res['error']['message'] = 'Empty Request!';
+            echo json_encode($res);
+            exit;
+        }
+        $profile_id = $request['profile_id'];
+        $requester = $this->Format->getProfileId($profile_id);
+
+        $this->loadModel('Friends');
+        $friends = $this->Friends->find('all', [
+            'conditions' => ['status' => 2, 'OR' => [
+                'requester_id' => $requester, 'receiver_id' => $requester,
+            ],
+            ],
+
+        ])->toArray();
+        $friend_ids = array();
+        foreach ($friends as $friend) {
+            if ($friend['requester_id'] != $requester) {
+                $friend_ids[] = $friend['requester_id'];
+                //  $friend_ids[] = $friend['receiver_id'];
+            }
+            if ($friend['receiver_id'] != $requester) {
+                // $friend_ids[] = $friend['requester_id'];
+                $friend_ids[] = $friend['receiver_id'];
+            }
+        }
+        if (!empty($friend_ids)) {
+            $profiles = $this->Profiles->find('all', [
+                'conditions' => ['Profiles.id IN' => $friend_ids],
+            ])->toArray();
+            if (isset($profiles) && !empty($profiles)) {
+                for ($i = 0; $i < count($profiles); $i++) {
+                    $data[$i]['id'] = $profiles[$i]['uniq_id'];
+                    $data[$i]['name'] = $profiles[$i]['pet_name'];
+                }
+                $res['result'] = $data;
+            } else {
+                $res['error']['status_code'] = 0;
+                $res['error']['message'] = 'No friends in friend list!';
+            }
+        } else {
+            $res['error']['status_code'] = 0;
+            $res['error']['message'] = 'No friends in friend list!';
+        }
+        $responseResult = json_encode($res);
+        $this->response->type('json');
+        $this->response->body($responseResult);
+    }
 }

@@ -70,8 +70,8 @@ class ProfilesFixture extends TestFixture
                 'neutered' => 1,
                 'intact' => 1,
                 'mix' => 'Lorem ipsum dolor sit amet',
-                'created' => '2018-07-29 06:55:34',
-                'modified' => '2018-07-29 06:55:34'
+                'created' => '2018-08-25 07:10:37',
+                'modified' => '2018-08-25 07:10:37'
             ],
         ];
         parent::init();
